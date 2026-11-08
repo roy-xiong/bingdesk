@@ -24,7 +24,7 @@ iconutil --convert icns "$task_iconset" --output "$task_app/Contents/Resources/A
 # ad-hoc 只满足本机运行所需的代码完整性校验，不声称具备 Developer ID 或公证。
 codesign --force --sign - --identifier com.royxiong.bingdesk "$task_app"
 codesign --verify --deep --strict --verbose=2 "$task_app"
-lipo -verify_arch arm64 "$task_app/Contents/MacOS/BingDesk"
+lipo "$task_app/Contents/MacOS/BingDesk" -verify_arch arm64
 plutil -lint "$task_app/Contents/Info.plist"
 ditto "$task_app" "$task_stage/BingDesk.app"
 ln -s /Applications "$task_stage/Applications"
