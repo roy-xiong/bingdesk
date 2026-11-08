@@ -53,9 +53,9 @@ struct MenuView: View {
             }
 
             Divider()
-            Toggle("自动换壁纸", isOn: Binding(get: { model.preferences.automatic }, set: model.setAutomatic))
+            Toggle("自动换壁纸", isOn: Binding(get: { model.preferences.automatic }, set: { model.setAutomatic($0) }))
                 .accessibilityIdentifier("automaticWallpaper")
-            Picker("切换模式", selection: Binding(get: { model.preferences.mode }, set: model.setMode)) {
+            Picker("切换模式", selection: Binding(get: { model.preferences.mode }, set: { model.setMode($0) })) {
                 Text("每日最新").tag(SwitchMode.daily)
                 Text("定时随机").tag(SwitchMode.interval)
             }.pickerStyle(.segmented).labelsHidden().disabled(!model.preferences.automatic)
@@ -76,7 +76,7 @@ struct MenuView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
             Text(model.scheduleDescription).font(.caption).foregroundStyle(.secondary)
-            Toggle("登录时启动", isOn: Binding(get: { model.loginEnabled }, set: model.configureLogin))
+            Toggle("登录时启动", isOn: Binding(get: { model.loginEnabled }, set: { model.configureLogin($0) }))
                 .accessibilityIdentifier("launchAtLogin")
             if model.loginNeedsApproval {
                 Button("前往系统设置允许登录项") { SMAppService.openSystemSettingsLoginItems() }
