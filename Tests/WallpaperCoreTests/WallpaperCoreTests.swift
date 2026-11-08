@@ -1,5 +1,6 @@
 import XCTest
 import Foundation
+import CryptoKit
 import ImageIO
 import UniformTypeIdentifiers
 @testable import WallpaperCore
@@ -90,6 +91,65 @@ final class WallpaperCoreTests: XCTestCase {
         let invalid = directory.appendingPathComponent("fake.jpg")
         try Data("not an image".utf8).write(to: invalid)
         XCTAssertThrowsError(try ImageValidator.dimensions(at: invalid))
+    }
+
+    func testMalformedJSONThrowsInsteadOfReturningEmptySuccess() {
+        XCTAssertThrowsError(try WallpaperParser.latest(from: Data("[]".utf8)))
+        XCTAssertThrowsError(try WallpaperParser.archive(from: Data("{}".utf8)))
+        XCTAssertThrowsError(try WallpaperParser.archiveYears(from: Data("bad".utf8)))
+    }
+
+    @MainActor
+    func testPrepareRevalidatesDiskCacheAndNeverDeletesPermanentArchive() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let cache = root.appendingPathComponent("cache")
+        let archive = root.appendingPathComponent("Downloads/微软壁纸")
+        try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: archive, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let original = try XCTUnwrap(URL(string: "https://www.bing.com/th?id=OHR.Test_UHD.jpg"))
+        let wallpaper = Wallpaper(date: "20261108", title: "测试", copyright: "作者", urlbase: "/th?id=OHR.Test", url: original, uhd: true)
+        let digest = SHA256.hash(data: Data(original.absoluteString.utf8)).map { String(format: "%02x", $0) }.joined()
+        let cached = cache.appendingPathComponent("20261108-\(digest).jpg")
+        try writePNG(to: cached, width: 3840, height: 2160)
+        let permanent = archive.appendingPathComponent("permanent.jpg")
+        try Data("permanent image".utf8).write(to: permanent)
+        let unrelated = cache.appendingPathComponent("unrelated.txt")
+        try Data("keep".utf8).write(to: unrelated)
+        var old: [URL] = []
+        for number in 0..<11 {
+            let name = String(format: "%064x", number)
+            let file = cache.appendingPathComponent("20261101-\(name).jpg")
+            try Data("old image".utf8).write(to: file)
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: Double(number))], ofItemAtPath: file.path)
+            old.append(file)
+        }
+        let protected = try XCTUnwrap(old.first)
+        let service = WallpaperService(cacheDirectory: cache)
+        let prepared = try await service.prepare(wallpaper, protectedURLs: [protected, permanent])
+        XCTAssertEqual(prepared.localURL, cached)
+        XCTAssertEqual(prepared.width, 3840)
+        XCTAssertEqual(prepared.height, 2160)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: protected.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: old[1].path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: old[2].path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: old[3].path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: unrelated.path))
+        XCTAssertEqual(try Data(contentsOf: permanent), Data("permanent image".utf8))
+    }
+
+    @MainActor
+    func testPrepareRejectsUntrustedURLBeforeNetworkOrFileCreation() async throws {
+        let cache = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let original = try XCTUnwrap(URL(string: "https://evil.test/th?id=OHR.Test_UHD.jpg"))
+        let wallpaper = Wallpaper(date: "20261108", title: "", copyright: "", urlbase: "", url: original, uhd: true)
+        let service = WallpaperService(cacheDirectory: cache)
+        do {
+            _ = try await service.prepare(wallpaper, protectedURLs: [])
+            XCTFail("不可信 URL 必须被拒绝")
+        } catch WallpaperError.invalidURL {
+            XCTAssertFalse(FileManager.default.fileExists(atPath: cache.path))
+        }
     }
 
     private func writePNG(to url: URL, width: Int, height: Int) throws {
