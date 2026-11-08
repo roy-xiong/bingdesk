@@ -1,0 +1,18 @@
+BingDesk · 必应 4K 壁纸
+
+1. 将 BingDesk.app 拖入 Applications（应用程序）。
+2. 从应用程序打开 BingDesk；入口位于屏幕顶部菜单栏。
+3. 本自用版本使用 ad-hoc 临时签名，没有 Apple 公证。
+   如果首次启动被拦截，请先尝试打开，再前往：
+   系统设置 → 隐私与安全性 → 仍要打开。
+4. 可以在菜单中打开“登录时启动”，并在系统设置中允许该登录项。
+
+仅接受真实像素至少 3840×2160 的图片，不会放大低清图。
+每天自动检查新图，也支持“随机换一张”和“恢复今日壁纸”。
+退出 App 后自动更新停止，已设置的壁纸会保留。
+
+图片版权属于原作者与 Bing。历史索引来自：
+https://github.com/YanGN-ST/bing_wallpaper_archive
+
+源码和更新：
+https://github.com/roy-xiong/bingdesk

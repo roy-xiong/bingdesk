@@ -1,0 +1,37 @@
+name: Build macOS DMG
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test core behavior
+        run: swift test --parallel
+      - name: Build, sign and package
+        run: bash scripts/package.sh
+      - name: Upload DMG and checksums
+        uses: actions/upload-artifact@v7
+        with:
+          name: BingDesk-macOS-arm64
+          path: |
+            dist/*.dmg
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30

@@ -16,6 +16,8 @@
 - Actual image size must satisfy width >= 3840 and height >= 2160; never upscale or use thumbnails as wallpaper.
 - Keep existing wallpaper on failure. All NSWorkspace desktop updates happen on MainActor.
 - Cache limit: 10 images and 200 MiB, with active desktop files protected.
+- Used originals persist in ~/Downloads/微软壁纸 without automatic deletion; temporary cache eviction never reaches that folder.
+- Daily/latest and interval/random modes are selectable. Interval accepts 1–10080 minutes; successful manual switches restart its countdown.
 - No credentials, signing certificates or Apple account required. Never store tokens in the repository.
 - Keep code readable with Chinese documentation comments; avoid forced unwraps and unsafe Sendable workarounds.
 
