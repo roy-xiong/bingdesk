@@ -93,6 +93,12 @@ struct MenuView: View {
         }
         .padding(16).frame(width: 368)
         .onAppear {
+            // 菜单栏弹窗默认不会激活应用；主动激活后输入框才能接收键盘焦点。
+            if #available(macOS 14.0, *) {
+                NSApplication.shared.activate()
+            } else {
+                NSApplication.shared.activate(ignoringOtherApps: true)
+            }
             intervalText = String(model.preferences.intervalMinutes)
             model.refreshLoginStatus()
         }
